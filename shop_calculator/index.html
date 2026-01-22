@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>优居资管 | 商铺收益测算器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* 样式代码 - 简洁专业的UI */
+        body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .input-group { margin: 20px 0; }
+        .result-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .number-a { color: #ff6b6b; font-size: 28px; font-weight: bold; }
+        .number-b { color: #51cf66; font-size: 28px; font-weight: bold; }
+        .btn-calculate {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 您的商铺值多少钱？</h1>
+        <p>填写基本信息，立即测算两种模式下的3年收益对比</p>
+
+        <!-- 输入表单 -->
+        <div class="input-group">
+            <label>商铺面积（㎡）</label>
+            <input type="number" id="area" placeholder="例如：100" min="20" max="1000">
+        </div>
+
+        <div class="input-group">
+            <label>所在商圈</label>
+            <select id="location">
+                <option value="1.3">核心商圈（商场、步行街）</option>
+                <option value="1.0">区域商圈（社区商业街）</option>
+                <option value="0.8">社区底商</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>商铺状况</label>
+            <select id="condition">
+                <option value="1.2">精装修，可直接使用</option>
+                <option value="1.0">普通装修，需简单整理</option>
+                <option value="0.8">毛坯或需大修</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>当前租金（元/月）</label>
+            <input type="number" id="currentRent" placeholder="填写当前月租金">
+            <small>如不确定，可不填，系统会自动估算</small>
+        </div>
+
+        <button class="btn-calculate" onclick="calculate()">立即测算</button>
+
+        <!-- 结果展示区域 -->
+        <div id="resultSection" style="display:none;">
+            <div class="result-card">
+                <h2>📊 测算结果</h2>
+
+                <div style="margin: 25px 0;">
+                    <h3>市场评估月租金：<span id="marketRent">--</span> 元</h3>
+                    <small>基于您提供的信息和大数据评估</small>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin: 30px 0;">
+                    <div style="text-align: center;">
+                        <h4>自营模式</h4>
+                        <div class="number-a" id="numberA">--</div>
+                        <small>未来3年预期总收益</small>
+                        <div style="margin-top: 15px; color: #666; font-size: 14px;">
+                            <div>✓ 理论峰值可能更高</div>
+                            <div>✗ 需承担空置风险</div>
+                            <div>✗ 需投入管理精力</div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center;">
+                        <h4>托管模式</h4>
+                        <div class="number-b" id="numberB">--</div>
+                        <small>未来3年确定总收益</small>
+                        <div style="margin-top: 15px; color: #666; font-size: 14px;">
+                            <div>✓ 收益100%确定</div>
+                            <div>✓ 零空置风险</div>
+                            <div>✓ 彻底解放精力</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: white; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <h4>🏆 托管优势</h4>
+                    <p>选择托管，您将：</p>
+                    <ul>
+                        <li>多获得 <strong id="profitDiff">--</strong> 元确定收益</li>
+                        <li>节省超过 <strong>300小时</strong> 管理时间</li>
+                        <li>消除所有租金拖欠和空置风险</li>
+                    </ul>
+                </div>
+
+                <button onclick="showContact()" style="background: #51cf66; color: white; padding: 15px 30px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+                    📞 获取我的专属托管方案
+                </button>
+            </div>
+        </div>
+
+        <!-- 联系表单 -->
+        <div id="contactForm" style="display:none; margin-top: 40px;">
+            <h3>留下联系方式，资产顾问将在24小时内联系您</h3>
+            <input type="text" id="userName" placeholder="您的姓名" style="width: 100%; padding: 12px; margin: 10px 0;">
+            <input type="tel" id="userPhone" placeholder="手机号码" style="width: 100%; padding: 12px; margin: 10px 0;">
+            <button onclick="submitForm()" style="background: #3498db; color: white; padding: 15px 40px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">提交预约</button>
+        </div>
+    </div>
+
+    <script>
+    // 城市基础租金单价（元/㎡/天），这里以二线城市为例
+    const cityBaseRent = {
+        '一线城市': 3.5,
+        '二线城市': 2.8,
+        '三线城市': 2.0
+    };
+
+    // 选择的城市（可在页面增加城市选择）
+    let selectedCity = '二线城市';
+    let baseRentPerSquare = cityBaseRent[selectedCity];
+
+    function calculate() {
+        // 获取输入值
+        const area = parseFloat(document.getElementById('area').value);
+        const locationCoefficient = parseFloat(document.getElementById('location').value);
+        const conditionCoefficient = parseFloat(document.getElementById('condition').value);
+        const currentRent = document.getElementById('currentRent').value ?
+            parseFloat(document.getElementById('currentRent').value) : null;
+
+        if (!area) {
+            alert('请输入商铺面积');
+            return;
+        }
+
+        // 计算市场参考月租金
+        let marketMonthlyRent;
+        if (currentRent) {
+            // 如果用户填写了当前租金，以此为基准
+            marketMonthlyRent = currentRent;
+        } else {
+            // 否则根据算法计算
+            marketMonthlyRent = area * baseRentPerSquare * 30 * locationCoefficient * conditionCoefficient;
+        }
+
+        // 数字A计算（自主经营）
+        const vacancyLossMonths = 1.8; // 年空置月数
+        const managementCostMonths = 0.5; // 管理成本（月租金倍数）
+        const riskReserveMonths = 1.0; // 风险准备金
+        const annualGrowth = 0.03; // 年增长率
+
+        let year1Net = marketMonthlyRent * (12 - vacancyLossMonths - managementCostMonths - riskReserveMonths);
+        let year2Net = year1Net * (1 + annualGrowth);
+        let year3Net = year2Net * (1 + annualGrowth);
+        let numberA = year1Net + year2Net + year3Net;
+
+        // 数字B计算（全托管）
+        const managedRentRatio = 0.93; // 托管租金系数
+        const managedMonthlyRent = marketMonthlyRent * managedRentRatio;
+        const annualIncrement = 0.03; // 年递增率
+
+        let year1Managed = managedMonthlyRent * 12;
+        let year2Managed = year1Managed * (1 + annualIncrement);
+        let year3Managed = year2Managed * (1 + annualIncrement);
+        let numberB = year1Managed + year2Managed + year3Managed;
+
+        // 更新页面显示
+        document.getElementById('marketRent').textContent = Math.round(marketMonthlyRent).toLocaleString();
+        document.getElementById('numberA').textContent = Math.round(numberA).toLocaleString() + '元';
+        document.getElementById('numberB').textContent = Math.round(numberB).toLocaleString() + '元';
+
+        const profitDiff = Math.round(numberB - numberA);
+        const profitDiffElement = document.getElementById('profitDiff');
+        profitDiffElement.textContent = Math.abs(profitDiff).toLocaleString();
+        profitDiffElement.style.color = profitDiff >= 0 ? '#51cf66' : '#ff6b6b';
+
+        // 显示结果区域
+        document.getElementById('resultSection').style.display = 'block';
+
+        // 滚动到结果区域
+        document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+
+        // 发送数据到后台（可选）
+        sendCalculationData({
+            area, locationCoefficient, conditionCoefficient,
+            marketMonthlyRent, numberA, numberB
+        });
+    }
+
+    function showContact() {
+        document.getElementById('contactForm').style.display = 'block';
+        document.getElementById('contactForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function submitForm() {
+        const name = document.getElementById('userName').value;
+        const phone = document.getElementById('userPhone').value;
+
+        if (!name || !phone) {
+            alert('请填写姓名和手机号码');
+            return;
+        }
+
+        // 发送表单数据到后台
+        sendContactInfo({ name, phone });
+
+        // 显示成功消息
+        alert('提交成功！资产顾问将在24小时内联系您。');
+
+        // 清空表单
+        document.getElementById('userName').value = '';
+        document.getElementById('userPhone').value = '';
+    }
+
+    // 发送计算数据到后台（示例）
+    function sendCalculationData(data) {
+        // 这里可以添加发送到服务器的代码
+        console.log('计算数据:', data);
+        // fetch('/api/calculation', { method: 'POST', body: JSON.stringify(data) })
+    }
+
+    function sendContactInfo(data) {
+        // 这里可以添加发送到服务器的代码
+        console.log('联系信息:', data);
+        // fetch('/api/contact', { method: 'POST', body: JSON.stringify(data) })
+    }
+    </script>
+</body>
+</html>
